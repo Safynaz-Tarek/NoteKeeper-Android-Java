@@ -5,7 +5,10 @@ import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
+import android.provider.ContactsContract;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
@@ -25,12 +28,21 @@ public class NoteActivity extends AppCompatActivity {
     private int mNotePosition;
     private boolean mIsCancelling;
 
+    private NoteActivityViewModel mViewModel;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_note);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        ViewModelProvider viewModelProvider =
+                new ViewModelProvider(getViewModelStore(),
+                        ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication()));
+
+        mViewModel = viewModelProvider.get(NoteActivityViewModel.class);
+
 
         mSpinnerCourses = findViewById(R.id.spinner_courses);
 
@@ -41,7 +53,7 @@ public class NoteActivity extends AppCompatActivity {
         mSpinnerCourses.setAdapter(adapterCourses);
 
         readDisplayStateValues();
-
+        saveOriginalNoteValues();
         mTextNoteTitle = findViewById(R.id.text_note_title);
         mTextNoteText = findViewById(R.id.text_note_text);
 
@@ -49,15 +61,32 @@ public class NoteActivity extends AppCompatActivity {
             displayNote(mSpinnerCourses, mTextNoteTitle, mTextNoteText);
     }
 
+    private void saveOriginalNoteValues() {
+        if(mIsNewNote)
+            return;
+        mViewModel.setOriginalNoteCourseID( mNote.getCourse().getCourseId());
+        mViewModel.setOriginalNoteCourseTitle(mNote.getTitle());
+        mViewModel.setOriginalNoteCourseText(mNote.getText());
+
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
         if(mIsCancelling) {
-            if(mIsNewNote)
-                DataManager.getInstance().removeNote(mNotePosition);
+            if(mIsNewNote){
+                DataManager.getInstance().removeNote(mNotePosition);}
+            else{storePrevNoteValues();}
         } else {
             saveNote();
         }
+    }
+
+    private void storePrevNoteValues() {
+        CourseInfo course = DataManager.getInstance().getCourse(mViewModel.getOriginalNoteCourseID());
+        mNote.setCourse(course);
+        mNote.setText(mViewModel.getOriginalNoteCourseText());
+        mNote.setTitle(mViewModel.getOriginalNoteCourseTitle());
     }
 
     private void saveNote() {
