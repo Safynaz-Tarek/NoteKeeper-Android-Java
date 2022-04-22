@@ -1,6 +1,7 @@
 package com.jwhh.notekeeper;
 
 import android.content.Intent;
+import android.media.tv.TvView;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -42,6 +43,10 @@ public class NoteActivity extends AppCompatActivity {
                         ViewModelProvider.AndroidViewModelFactory.getInstance(getApplication()));
 
         mViewModel = viewModelProvider.get(NoteActivityViewModel.class);
+        if(mViewModel.getIsViewNewlyCreated() && savedInstanceState!= null){
+            mViewModel.restoreState(savedInstanceState);
+        }
+        mViewModel.setViewNewlyCreated(false);
 
 
         mSpinnerCourses = findViewById(R.id.spinner_courses);
@@ -68,6 +73,14 @@ public class NoteActivity extends AppCompatActivity {
         mViewModel.setOriginalNoteCourseTitle(mNote.getTitle());
         mViewModel.setOriginalNoteCourseText(mNote.getText());
 
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if(outState != null){
+            mViewModel.saveState(outState);
+        }
     }
 
     @Override
